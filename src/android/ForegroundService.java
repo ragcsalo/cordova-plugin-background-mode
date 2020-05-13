@@ -35,6 +35,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.app.NotificationChannel;
+import android.util.Log;
 
 import org.json.JSONObject;
 
@@ -48,18 +49,15 @@ import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
 public class ForegroundService extends Service {
 
     // Fixed ID for the 'foreground' notification
-    public static final int NOTIFICATION_ID = -574543954;
+    public static final int NOTIFICATION_ID = 5545439;
 
     // Default title of the background notification
     private static final String NOTIFICATION_TITLE =
-            "App is running in background";
+            "The app is running...";
 
     // Default text of the background notification
     private static final String NOTIFICATION_TEXT =
-            "Doing heavy tasks.";
-
-    // Default icon of the background notification
-    private static final String NOTIFICATION_ICON = "icon";
+            "in the background";
 
     // Binder given to clients
     private final IBinder binder = new ForegroundBinder();
@@ -108,6 +106,7 @@ public class ForegroundService extends Service {
     {
         super.onDestroy();
         sleepWell();
+        Log.d("chromium", "Destroyed...");
     }
 
     /**
@@ -126,11 +125,8 @@ public class ForegroundService extends Service {
     private void keepAwake()
     {
         JSONObject settings = BackgroundMode.getSettings();
-        boolean isSilent    = settings.optBoolean("silent", false);
 
-        if (!isSilent) {
-            startForeground(NOTIFICATION_ID, makeNotification());
-        }
+        startForeground(NOTIFICATION_ID, makeNotification());
 
         PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
 
@@ -172,25 +168,25 @@ public class ForegroundService extends Service {
     private Notification makeNotification (JSONObject settings)
     {
         // use channelid for Oreo and higher
-        String CHANNEL_ID = "cordova-plugin-background-mode-id";
+        //String CHANNEL_ID = "cordova-plugin-background-mode-id";
+        String CHANNEL_ID = "cordova-plugin-background-mode";
         if(Build.VERSION.SDK_INT >= 26){
-        // The user-visible name of the channel.
-        CharSequence name = "cordova-plugin-background-mode";
-        // The user-visible description of the channel.
-        String description = "cordova-plugin-background-moden notification";
+            // The user-visible name of the channel.
+            CharSequence name = "cordova-plugin-background-mode";
+            // The user-visible description of the channel.
+            String description = "cordova-plugin-background-mode notification";
 
-        int importance = NotificationManager.IMPORTANCE_LOW;
+            int importance = NotificationManager.IMPORTANCE_LOW;
 
-        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name,importance);
+            NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name,importance);
 
-        // Configure the notification channel.
-        mChannel.setDescription(description);
+            // Configure the notification channel.
+            mChannel.setDescription(description);
 
-        getNotificationManager().createNotificationChannel(mChannel);
+            getNotificationManager().createNotificationChannel(mChannel);
         }
-        String title    = settings.optString("title", NOTIFICATION_TITLE);
-        String text     = settings.optString("text", NOTIFICATION_TEXT);
-        boolean bigText = settings.optBoolean("bigText", false);
+        String title    = NOTIFICATION_TITLE;
+        String text     = NOTIFICATION_TEXT;
 
         Context context = getApplicationContext();
         String pkgName  = context.getPackageName();
@@ -203,20 +199,19 @@ public class ForegroundService extends Service {
                 .setOngoing(true)
                 .setSmallIcon(getIconResId(settings));
 
-        if(Build.VERSION.SDK_INT >= 26){
-                   notification.setChannelId(CHANNEL_ID);
+        if(Build.VERSION.SDK_INT >= 21) {
+            notification.setVisibility(Notification.VISIBILITY_SECRET);
         }
 
-        if (settings.optBoolean("hidden", true)) {
+        if(Build.VERSION.SDK_INT >= 26){
+            notification.setChannelId(CHANNEL_ID);
+            Log.d("chromium", "Channel ID: "+CHANNEL_ID);
+        }
+        else {
             notification.setPriority(Notification.PRIORITY_MIN);
         }
 
-        if (bigText || text.contains("\n")) {
-            notification.setStyle(
-                    new Notification.BigTextStyle().bigText(text));
-        }
 
-        setColor(notification, settings);
 
         if (intent != null && settings.optBoolean("resume")) {
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -257,7 +252,7 @@ public class ForegroundService extends Service {
      */
     private int getIconResId (JSONObject settings)
     {
-        String icon = settings.optString("icon", NOTIFICATION_ICON);
+        String icon = "running";
 
         int resId = getIconResId(icon, "mipmap");
 
